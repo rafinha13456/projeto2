@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Campeonato + Votação Craque do Jogo</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* RESET + Layout básico */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #f4f4f9;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #1e88e5;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    main {
+      flex-grow: 1;
+      padding: 20px;
+      max-width: 1200px;
+      margin: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+    section {
+      background: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    h2 {
+      margin-top: 0;
+      border-bottom: 2px solid #1e88e5;
+      padding-bottom: 8px;
+      color: #1e88e5;
+    }
+
+    /* Formulários */
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    form > * {
+      flex: 1 1 45%;
+    }
+    form label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+    }
+    form input[type="text"],
+    form input[type="number"],
+    form input[type="date"],
+    form select,
+    form input[type="time"] {
+      width: 100%;
+      padding: 6px 8px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    form button {
+      flex: 1 1 100%;
+      padding: 10px;
+      background: #1e88e5;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    form button:hover {
+      background: #1565c0;
+    }
+
+    /* Listas */
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    li {
+      border-bottom: 1px solid #ddd;
+      padding: 8px 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    li:last-child {
+      border-bottom: none;
+    }
+    .small-info {
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    /* Jogador card votação */
+    #jogadores-votacao {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .jogador-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      width: 120px;
+      padding: 8px;
+      text-align: center;
+      cursor: pointer;
+      background: white;
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+    .jogador-card img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 50%;
+      margin-bottom: 5px;
+    }
+    .jogador-card:hover {
+      background-color: #e3f2fd;
+    }
+
+    /* Resultado votação */
+    #resultado-votacao {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    /* Painel abas */
+    nav#abas {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    nav#abas button {
+      background: #ddd;
+      border: none;
+      padding: 10px 20px;
+      margin: 0 5px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 5px 5px 0 0;
+      transition: background 0.3s ease;
+    }
+    nav#abas button.active {
+      background: #1e88e5;
+      color: white;
+      cursor: default;
+    }
+
+    /* Esconder todas as seções exceto ativa */
+    section.hidden {
+      display: none;
+    }
+
+    /* Scroll para área de lista */
+    #lista-times, #lista-jogadores, #lista-partidas {
+      max-height: 220px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 5px;
+      background: #fafafa;
+    }
+
+  </style>
+</head>
+<body>
+
+<header>🏆 Sistema Campeonato + Votação Craque do Jogo</header>
+
+<nav id="abas">
+  <button data-alvo="cadastro" class="active">Cadastro</button>
+  <button data-alvo="votacao">Votação</button>
+  <button data-alvo="estatisticas">Estatísticas</button>
+</nav>
+
+<main>
+
+  <!-- ABA Cadastro -->
+  <section id="cadastro">
+    <h2>Cadastro</h2>
+
+    <!-- Cadastro Times -->
+    <form id="form-time">
+      <h3>Cadastrar Time</h3>
+      <label for="escudo">URL Escudo (imagem)</label>
+      <input type="text" id="escudo" placeholder="URL da imagem do escudo" />
+      <label for="nome-time">Nome do Time *</label>
+      <input type="text" id="nome-time" required />
+      <label for="categoria-time">Categoria *</label>
+      <select id="categoria-time" required>
+        <option value="">Selecione...</option>
+        <option>Futebol</option>
+        <option>Basquete</option>
+        <option>e-Sports</option>
+      </select>
+      <button type="submit">Salvar Time</button>
+    </form>
+
+    <ul id="lista-times"></ul>
+
+    <hr />
+
+    <!-- Cadastro Jogadores -->
+    <form id="form-jogador">
+      <h3>Cadastrar Jogador</h3>
+      <label for="foto-jogador">URL Foto</label>
+      <input type="text" id="foto-jogador" placeholder="URL da foto do jogador" />
+      <label for="nome-jogador">Nome do Jogador *</label>
+      <input type="text" id="nome-jogador" required />
+      <label for="numero-jogador">Número *</label>
+      <input type="number" id="numero-jogador" min="0" required />
+      <label for="posicao-jogador">Posição *</label>
+      <select id="posicao-jogador" required>
+        <option value="">Selecione...</option>
+        <option>Goleiro</option>
+        <option>Defensor</option>
+        <option>Meio-campo</option>
+        <option>Atacante</option>
+      </select>
+      <label for="time-jogador">Time *</label>
+      <select id="time-jogador" required></select>
+      <button type="submit">Salvar Jogador</button>
+    </form>
+
+    <ul id="lista-jogadores"></ul>
+
+    <hr />
+
+    <!-- Cadastro Partidas -->
+    <form id="form-partida">
+      <h3>Cadastrar Partida</h3>
+      <label for="data-partida">Data *</label>
+      <input type="date" id="data-partida" required />
+      <label for="local-partida">Local *</label>
+      <input type="text" id="local-partida" required />
+      <label for="time-casa">Time Casa *</label>
+      <select id="time-casa" required></select>
+      <label for="time-fora">Time Fora *</label>
+      <select id="time-fora" required></select>
+      <label for="placar-casa">Placar Casa *</label>
+      <input type="number" id="placar-casa" min="0" required />
+      <label for="placar-fora">Placar Fora *</label>
+      <input type="number" id="placar-fora" min="0" required />
+      <button type="submit">Salvar Partida</button>
+    </form>
+
+    <ul id="lista-partidas"></ul>
+  </section>
+
+  <!-- ABA Votação -->
+  <section id="votacao" class="hidden">
+    <h2>Votação Craque do Jogo</h2>
+    <p>Selecione uma partida para votar no craque:</p>
+    <select id="partidas-votacao"></select>
+    <button id="btn-iniciar-votacao">Iniciar Votação (10s)</button>
+
+    <div id="contador-votacao" style="font-weight:bold; margin-top:10px;"></div>
+    <div id="jogadores-votacao"></div>
+    <div id="resultado-votacao"></div>
+  </section>
+
+  <!-- ABA Estatísticas -->
+  <section id="estatisticas" class="hidden">
+    <h2>Estatísticas</h2>
+    <canvas id="grafico-geral" width="400" height="200"></canvas>
+    <canvas id="grafico-time" width="400" height="200" style="margin-top: 40px;"></canvas>
+    <canvas id="grafico-posicao" width="400" height="200" style="margin-top: 40px;"></canvas>
+  </section>
+
+</main>
+
+<script>
+  // Constantes chaves para localStorage
+  const LS_TIMES = 'campeonato_times';
+  const LS_JOGADORES = 'campeonato_jogadores';
+  const LS_PARTIDAS = 'campeonato_partidas';
+  const LS_VOTOS = 'campeonato_votos'; // { partidaId: { jogadorNome: votos }}
+
+  // Funções utilitárias para localStorage
+  function getData(key) {
+    return JSON.parse(localStorage.getItem(key) || '[]');
+  }
+  function setData(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  // === Cadastro Times ===
+
+  const formTime = document.getElementById('form-time');
+  const listaTimes = document.getElementById('lista-times');
+  const selectTimeJogador = document.getElementById('time-jogador');
+  const selectTimeCasa = document.getElementById('time-casa');
+  const selectTimeFora = document.getElementById('time-fora');
+
+  function atualizarListaTimes() {
+    const times = getData(LS_TIMES);
+    listaTimes.innerHTML = '';
+    selectTimeJogador.innerHTML = '<option value="">Selecione...</option>';
+    selectTimeCasa.innerHTML = '<option value="">Selecione...</option>';
+    selectTimeFora.innerHTML = '<option value="">Selecione...</option>';
+
+    times.forEach((time, idx) => {
+      // Lista Times
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <img src="${time.escudo || 'https://via.placeholder.com/40'}" alt="Escudo" style="width: 40px; height: 40px; border-radius: 5px; object-fit: contain; margin-right: 10px;">
+        <span><strong>${time.nome}</strong> (${time.categoria})</span>
+      `;
+      listaTimes.appendChild(li);
+
+      // Select opções times
+      const option = `<option value="${time.nome}">${time.nome}</option>`;
+      selectTimeJogador.insertAdjacentHTML('beforeend', option);
+      selectTimeCasa.insertAdjacentHTML('beforeend', option);
+      selectTimeFora.insertAdjacentHTML('beforeend', option);
+    });
+  }
+
+  formTime.addEventListener('submit', e => {
+    e.preventDefault();
+    const escudo = document.getElementById('escudo').value.trim();
+    const nome = document.getElementById('nome-time').value.trim();
+    const categoria = document.getElementById('categoria-time').value;
+
+    if(!nome || !categoria){
+      alert('Preencha nome e categoria do time');
+      return;
+    }
+
+    const times = getData(LS_TIMES);
+    if(times.some(t => t.nome.toLowerCase() === nome.toLowerCase())){
+      alert('Time já cadastrado!');
+      return;
+    }
+
+    times.push({ escudo, nome, categoria });
+    setData(LS_TIMES, times);
+
+    formTime.reset();
+    atualizarListaTimes();
+  });
+
+  // === Cadastro Jogadores ===
+
+  const formJogador = document.getElementById('form-jogador');
+  const listaJogadores = document.getElementById('lista-jogadores');
+
+  function atualizarListaJogadores() {
+    const jogadores = getData(LS_JOGADORES);
+    listaJogadores.innerHTML = '';
+
+    jogadores.forEach(jog => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <img src="${jog.foto || 'https://via.placeholder.com/40'}" alt="Foto" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
+        <span><strong>${jog.nome}</strong> (#${jog.numero} - ${jog.posicao}) - <em>${jog.time}</em></span>
+      `;
+      listaJogadores.appendChild(li);
+    });
+  }
+
+  formJogador.addEventListener('submit', e => {
+    e.preventDefault();
+
+    const foto = document.getElementById('foto-jogador').value.trim();
+    const nome = document.getElementById('nome-jogador').value.trim();
+    const numero = Number(document.getElementById('numero-jogador').value);
+    const posicao = document.getElementById('posicao-jogador').value;
+    const time = document.getElementById('time-jogador').value;
+
+    if(!nome || !numero || !posicao || !time){
+      alert('Preencha todos os campos obrigatórios do jogador');
+      return;
+    }
+
+    const jogadores = getData(LS_JOGADORES);
+    if(jogadores.some(j => j.nome.toLowerCase() === nome.toLowerCase() && j.time === time)){
+      alert('Jogador já cadastrado nesse time!');
+      return;
+    }
+
+    jogadores.push({ foto, nome, numero, posicao, time });
+    setData(LS_JOGADORES, jogadores);
+
+    formJogador.reset();
+    atualizarListaJogadores();
+  });
+
+  // === Cadastro Partidas ===
+
+  const formPartida = document.getElementById('form-partida');
+  const listaPartidas = document.getElementById('lista-partidas');
+
+  function atualizarListaPartidas() {
+    const partidas = getData(LS_PARTIDAS);
+    listaPartidas.innerHTML = '';
+
+    partidas.forEach((partida, idx) => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <strong>Partida #${idx+1}</strong> - ${partida.data} - ${partida.local}<br />
+        ${partida.timeCasa} (${partida.placarCasa}) x (${partida.placarFora}) ${partida.timeFora}
+      `;
+      listaPartidas.appendChild(li);
+    });
+  }
+
+  formPartida.addEventListener('submit', e => {
+    e.preventDefault();
+
+    const data = document.getElementById('data-partida').value;
+    const local = document.getElementById('local-partida').value.trim();
+    const timeCasa = document.getElementById('time-casa').value;
+    const timeFora = document.getElementById('time-fora').value;
+    const placarCasa = Number(document.getElementById('placar-casa').value);
+    const placarFora = Number(document.getElementById('placar-fora').value);
+
+    if(!data || !local || !timeCasa || !timeFora || timeCasa === timeFora){
+      alert('Preencha todos os campos e selecione times diferentes');
+      return;
+    }
+
+    const partidas = getData(LS_PARTIDAS);
+    partidas.push({ data, local, timeCasa, timeFora, placarCasa, placarFora });
+    setData(LS_PARTIDAS, partidas);
+
+    formPartida.reset();
+    atualizarListaPartidas();
+    atualizarListaPartidasVotacao();
+  });
+
+  // === Votação Craque do Jogo ===
+
+  const selectPartidasVotacao = document.getElementById('partidas-votacao');
+  const btnIniciarVotacao = document.getElementById('btn-iniciar-votacao');
+  const contadorVotacao = document.getElementById('contador-votacao');
+  const jogadoresVotacaoDiv = document.getElementById('jogadores-votacao');
+  const resultadoVotacaoDiv = document.getElementById('resultado-votacao');
+
+  let tempoVotacao = 0;
+  let timerId = null;
+  let votos = {};
+  let partidaAtualId = null;
+
+  // Preencher partidas no select da votação
+  function atualizarListaPartidasVotacao() {
+    const partidas = getData(LS_PARTIDAS);
+    selectPartidasVotacao.innerHTML = '<option value="">Selecione uma partida</option>';
+
+    partidas.forEach((partida, idx) => {
+      const texto = `#${idx+1} - ${partida.data} - ${partida.timeCasa} x ${partida.timeFora}`;
+      selectPartidasVotacao.insertAdjacentHTML('beforeend', `<option value="${idx}">${texto}</option>`);
+    });
+  }
+
+  // Mostrar jogadores da partida para votação
+  function mostrarJogadoresParaVotacao(partidaId) {
+    jogadoresVotacaoDiv.innerHTML = '';
+    resultadoVotacaoDiv.innerHTML = '';
+    votos = {};
+    partidaAtualId = partidaId;
+
+    if(partidaId === null || partidaId === ''){
+      jogadoresVotacaoDiv.innerHTML = '<p>Selecione uma partida para iniciar a votação.</p>';
+      return;
+    }
+
+    const partidas = getData(LS_PARTIDAS);
+    const partida = partidas[partidaId];
+    if(!partida) return;
+
+    // Pegar jogadores dos dois times
+    const jogadores = getData(LS_JOGADORES);
+    const jogadoresPartida = jogadores.filter(j => j.time === partida.timeCasa || j.time === partida.timeFora);
+
+    if(jogadoresPartida.length === 0){
+      jogadoresVotacaoDiv.innerHTML = '<p>Não há jogadores cadastrados para os times dessa partida.</p>';
+      return;
+    }
+
+    jogadoresPartida.forEach(jog => {
+      votos[jog.nome] = 0;
+      const card = document.createElement('div');
+      card.className = 'jogador-card';
+      card.setAttribute('data-nome', jog.nome);
+      card.innerHTML = `
+        <img src="${jog.foto || 'https://via.placeholder.com/80'}" alt="Foto" />
+        <div><strong>${jog.nome}</strong></div>
+        <small>${jog.posicao}</small>
+      `;
+      card.addEventListener('click', () => {
+        if(tempoVotacao <= 0){
+          alert('A votação não está ativa!');
+          return;
+        }
+        votos[jog.nome]++;
+        card.style.backgroundColor = '#a5d6a7'; // feedback verde
+      });
+      jogadoresVotacaoDiv.appendChild(card);
+    });
+  }
+
+  btnIniciarVotacao.addEventListener('click', () => {
+    if(!selectPartidasVotacao.value){
+      alert('Selecione uma partida para iniciar a votação');
+      return;
+    }
+
+    tempoVotacao = 10; // segundos
+    contadorVotacao.textContent = `Tempo restante: ${tempoVotacao} segundos`;
+    resultadoVotacaoDiv.textContent = '';
+    mostrarJogadoresParaVotacao(selectPartidasVotacao.value);
+
+    if(timerId) clearInterval(timerId);
+    timerId = setInterval(() => {
+      tempoVotacao--;
+      if(tempoVotacao > 0){
+        contadorVotacao.textContent = `Tempo restante: ${tempoVotacao} segundos`;
+      } else {
+        clearInterval(timerId);
+        contadorVotacao.textContent = 'Votação encerrada!';
+        mostrarResultadoVotacao();
+        salvarVotos();
+      }
+    }, 1000);
+  });
+
+  function mostrarResultadoVotacao() {
+    if(!votos || Object.keys(votos).length === 0) return;
+    const totalVotos = Object.values(votos).reduce((a,b) => a+b, 0);
+    if(totalVotos === 0){
+      resultadoVotacaoDiv.textContent = 'Nenhum voto registrado.';
+      return;
+    }
+
+    // Ordenar jogadores por votos decrescente
+    const resultadoOrdenado = Object.entries(votos).sort((a,b) => b[1] - a[1]);
+    const craque = resultadoOrdenado[0][0];
+
+    let texto = `Resultado da votação: Total votos = ${totalVotos}\n\n`;
+    resultadoOrdenado.forEach(([nome, count]) => {
+      const perc = ((count / totalVotos) * 100).toFixed(1);
+      texto += `${nome}: ${count} voto(s) - ${perc}%\n`;
+    });
+
+    // Mostrar resultado em div formatada
+    resultadoVotacaoDiv.innerHTML = `<strong>Craque do Jogo: ${craque}</strong><br />`;
+    resultadoOrdenado.forEach(([nome, count]) => {
+      const perc = ((count / totalVotos) * 100).toFixed(1);
+      resultadoVotacaoDiv.innerHTML += `${nome}: ${count} voto(s) - ${perc}%<br />`;
+    });
+
+    // Atualizar selo craque no jogador
+    marcarCraqueJogador(craque);
+  }
+
+  // Salvar votos no localStorage para análise posterior
+  function salvarVotos() {
+    const votosExistentes = JSON.parse(localStorage.getItem(LS_VOTOS) || '{}');
+    votosExistentes[partidaAtualId] = votos;
+    localStorage.setItem(LS_VOTOS, JSON.stringify(votosExistentes));
+    atualizarGraficos();
+  }
+
+  // Marcar selo craque no perfil do jogador
+  function marcarCraqueJogador(nomeJogador) {
+    const jogadores = getData(LS_JOGADORES);
+    jogadores.forEach(jog => {
+      if(jog.nome === nomeJogador){
+        jog.craque = (jog.craque || 0) + 1;
+      }
+    });
+    setData(LS_JOGADORES, jogadores);
+    atualizarListaJogadores();
+  }
+
+  // === Estatísticas e gráficos ===
+
+  const ctxGeral = document.getElementById('grafico-geral').getContext('2d');
+  const ctxTime = document.getElementById('grafico-time').getContext('2d');
+  const ctxPosicao = document.getElementById('grafico-posicao').getContext('2d');
+
+  let graficoGeral, graficoTime, graficoPosicao;
+
+  function atualizarGraficos() {
+    const jogadores = getData(LS_JOGADORES);
+
+    // Geral: Top 5 craques (jogadores com mais "craque" selo)
+    const craques = jogadores.filter(j => j.craque).sort((a,b) => b.craque - a.craque).slice(0,5);
+    const labelsGeral = craques.map(j => j.nome);
+    const dataGeral = craques.map(j => j.craque);
+
+    // Time com mais craques
+    const timeCraques = {};
+    jogadores.forEach(j => {
+      if(j.craque){
+        timeCraques[j.time] = (timeCraques[j.time] || 0) + j.craque;
+      }
+    });
+    const labelsTime = Object.keys(timeCraques);
+    const dataTime = Object.values(timeCraques);
+
+    // Jogadores por posição com craque
+    const posicoes = ['Goleiro', 'Defensor', 'Meio-campo', 'Atacante'];
+    const posicaoCraques = posicoes.map(pos => jogadores.filter(j => j.posicao === pos && j.craque).reduce((a,b) => a + (b.craque || 0), 0));
+
+    // Destruir gráficos antigos antes de criar novos (evita duplicar)
+    if(graficoGeral) graficoGeral.destroy();
+    if(graficoTime) graficoTime.destroy();
+    if(graficoPosicao) graficoPosicao.destroy();
+
+    graficoGeral = new Chart(ctxGeral, {
+      type: 'bar',
+      data: {
+        labels: labelsGeral.length ? labelsGeral : ['Nenhum voto'],
+        datasets: [{
+          label: 'Craques do Jogo (votos)',
+          data: dataGeral.length ? dataGeral : [0],
+          backgroundColor: '#1e88e5'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true, precision:0 }
+        }
+      }
+    });
+
+    graficoTime = new Chart(ctxTime, {
+      type: 'pie',
+      data: {
+        labels: labelsTime.length ? labelsTime : ['Nenhum voto'],
+        datasets: [{
+          label: 'Times com mais craques',
+          data: dataTime.length ? dataTime : [0],
+          backgroundColor: ['#1e88e5', '#1565c0', '#42a5f5', '#90caf9', '#bbdefb']
+        }]
+      },
+      options: {
+        responsive: true
+      }
+    });
+
+    graficoPosicao = new Chart(ctxPosicao, {
+      type: 'bar',
+      data: {
+        labels: posicoes,
+        datasets: [{
+          label: 'Craques por Posição',
+          data: posicaoCraques,
+          backgroundColor: '#43a047'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true, precision: 0 }
+        }
+      }
+    });
+  }
+
+  // === Navegação entre abas ===
+  const botoesAbas = document.querySelectorAll('nav#abas button');
+  const secoes = document.querySelectorAll('main > section');
+
+  botoesAbas.forEach(botao => {
+    botao.addEventListener('click', () => {
+      botoesAbas.forEach(b => b.classList.remove('active'));
+      botao.classList.add('active');
+      const alvo = botao.getAttribute('data-alvo');
+
+      secoes.forEach(sec => {
+        if(sec.id === alvo) sec.classList.remove('hidden');
+        else sec.classList.add('hidden');
+      });
+
+      // Atualiza conteúdos se necessário
+      if(alvo === 'cadastro'){
+        atualizarListaTimes();
+        atualizarListaJogadores();
+        atualizarListaPartidas();
+        atualizarListaPartidasVotacao();
+      } else if(alvo === 'votacao'){
+        atualizarListaPartidasVotacao();
+        mostrarJogadoresParaVotacao(null);
+        contadorVotacao.textContent = '';
+        resultadoVotacaoDiv.textContent = '';
+      } else if(alvo === 'estatisticas'){
+        atualizarGraficos();
+      }
+    });
+  });
+
+  // Inicializa dados na página
+  atualizarListaTimes();
+  atualizarListaJogadores();
+  atualizarListaPartidas();
+  atualizarListaPartidasVotacao();
+  atualizarGraficos();
+
+</script>
+
+</body>
+</html>
